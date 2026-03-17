@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SME Loan Eligibility Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<header>
+  <div class="logo">
+    <span class="logo-icon">◈</span>
+    <span>SME <b>LoanCheck</b></span>
+  </div>
+  <div class="header-tag">Logistic Regression · ML Model</div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">Instant Eligibility Check · 5 Borrower Types · AI-Powered</div>
+    <h1>Will Your Loan Get<br/><span class="accent">Approved?</span></h1>
+    <p class="hero-sub">Fill in your details below. Our ML model will tell you if you qualify — and exactly what to fix if you don't.</p>
+  </section>
+
+  <!-- How it works -->
+  <section class="howto">
+    <div class="howto-step"><span class="hs-num">1</span><span class="hs-txt">Pick your borrower type</span></div>
+    <div class="howto-arrow">→</div>
+    <div class="howto-step"><span class="hs-num">2</span><span class="hs-txt">Fill in your details</span></div>
+    <div class="howto-arrow">→</div>
+    <div class="howto-step"><span class="hs-num">3</span><span class="hs-txt">Get instant result + tips</span></div>
+  </section>
+
+  <!-- Category tabs -->
+  <section class="cat-section">
+    <div class="cat-label">Step 1 — Who are you?</div>
+    <div class="cat-tabs" id="catTabs">
+      <button class="ctab active" data-cat="farmer">
+        <span class="ctab-icon">🌾</span>
+        <span class="ctab-name">Farmer / Agri</span>
+      </button>
+      <button class="ctab" data-cat="startup">
+        <span class="ctab-icon">🚀</span>
+        <span class="ctab-name">Startup</span>
+      </button>
+      <button class="ctab" data-cat="existing">
+        <span class="ctab-icon">🏢</span>
+        <span class="ctab-name">Existing Business</span>
+      </button>
+      <button class="ctab" data-cat="women">
+        <span class="ctab-icon">👩</span>
+        <span class="ctab-name">Women Entrepreneur</span>
+      </button>
+      <button class="ctab" data-cat="msme">
+        <span class="ctab-icon">🏭</span>
+        <span class="ctab-name">Micro / MSME</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Form -->
+  <section class="form-section">
+    <div class="form-step-label">Step 2 — Your Details</div>
+    <form id="loanForm">
+      <!-- Common Fields -->
+      <div class="field-group" id="grp-common">
+        <div class="group-title">Basic Information</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Your Age <span class="req">*</span></label>
+            <input type="number" id="age" min="18" max="70" placeholder="e.g. 35" required/>
+          </div>
+          <div class="field">
+            <label>CIBIL / Credit Score <span class="req">*</span></label>
+            <input type="number" id="cibil" min="300" max="900" placeholder="e.g. 700" required/>
+            <div class="field-hint">💡 Score between 300–900. Check on CIBIL website if unsure.</div>
+          </div>
+          <div class="field">
+            <label>Annual Income (Rs.) <span class="req">*</span></label>
+            <input type="number" id="income" min="0" placeholder="e.g. 500000" required/>
+            <div class="field-hint">Total yearly income before taxes</div>
+          </div>
+          <div class="field">
+            <label>Loan Amount Needed (Rs.) <span class="req">*</span></label>
+            <input type="number" id="loan_amount" min="0" placeholder="e.g. 300000" required/>
+            <div class="field-hint">How much money you want to borrow</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Farmer Fields -->
+      <div class="field-group hidden" id="grp-farmer">
+        <div class="group-title">Your Farm Details</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Do you own agricultural land?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="land_owned" class="toggle-chk"/>
+              <label for="land_owned" class="toggle-lbl">Yes, I own agricultural land</label>
+            </div>
+            <div class="field-hint">Required for KCC / NABARD loans</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Startup Fields -->
+      <div class="field-group hidden" id="grp-startup">
+        <div class="group-title">Your Startup Details</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Registered under Startup India?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="dpiit_reg" class="toggle-chk"/>
+              <label for="dpiit_reg" class="toggle-lbl">Yes, DPIIT / Startup India registered</label>
+            </div>
+            <div class="field-hint">Free registration at startupindia.gov.in</div>
+          </div>
+          <div class="field">
+            <label>Do you already have a loan?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="existing_loan" class="toggle-chk"/>
+              <label for="existing_loan" class="toggle-lbl">Yes, I have an active loan</label>
+            </div>
+            <div class="field-hint">Existing loans reduce your eligibility</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Existing Business Fields -->
+      <div class="field-group hidden" id="grp-existing">
+        <div class="group-title">Your Business Details</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>How old is your business? (years)</label>
+            <input type="number" id="business_age" min="0" max="50" placeholder="e.g. 3"/>
+            <div class="field-hint">Minimum 1 year required</div>
+          </div>
+          <div class="field">
+            <label>Annual Business Turnover (Rs.)</label>
+            <input type="number" id="turnover" min="0" placeholder="e.g. 1200000"/>
+            <div class="field-hint">Total sales/revenue in a year</div>
+          </div>
+          <div class="field">
+            <label>Do you file GST returns?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="gst_filed" class="toggle-chk"/>
+              <label for="gst_filed" class="toggle-lbl">Yes, GST returns filed regularly</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Do you file Income Tax Returns?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="itr_filed" class="toggle-chk"/>
+              <label for="itr_filed" class="toggle-lbl">Yes, ITR filed every year</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Women Fields -->
+      <div class="field-group hidden" id="grp-women">
+        <div class="group-title">Your Business Ownership</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Is the business majority women-owned?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="women_owned" class="toggle-chk"/>
+              <label for="women_owned" class="toggle-lbl">Yes, women own 51% or more</label>
+            </div>
+            <div class="field-hint">Required for Stree Shakti, Annapurna schemes</div>
+          </div>
+          <div class="field">
+            <label>Are you a SHG member?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="shg_member" class="toggle-chk"/>
+              <label for="shg_member" class="toggle-lbl">Yes, member of Self Help Group</label>
+            </div>
+            <div class="field-hint">SHG membership improves rural loan access</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MSME Fields -->
+      <div class="field-group hidden" id="grp-msme">
+        <div class="group-title">Your Business Details</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>How old is your business? (years)</label>
+            <input type="number" id="msme_business_age" min="0" placeholder="e.g. 2"/>
+            <div class="field-hint">At least 1 year required</div>
+          </div>
+          <div class="field">
+            <label>Annual Business Turnover (Rs.)</label>
+            <input type="number" id="msme_turnover" min="0" placeholder="e.g. 800000"/>
+          </div>
+          <div class="field">
+            <label>Do you have Udyam Registration?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="udyam_reg" class="toggle-chk"/>
+              <label for="udyam_reg" class="toggle-lbl">Yes, Udyam registration done</label>
+            </div>
+            <div class="field-hint">Free at udyamregistration.gov.in — takes 10 min</div>
+          </div>
+          <div class="field">
+            <label>Do you file GST returns?</label>
+            <div class="toggle-row">
+              <input type="checkbox" id="msme_gst" class="toggle-chk"/>
+              <label for="msme_gst" class="toggle-lbl">Yes, GST returns filed regularly</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span class="btn-icon">◎</span>
+        <span class="btn-text">Check My Eligibility</span>
+        <span class="btn-loader hidden">Checking...</span>
+      </button>
+    </form>
+  </section>
+
+  <!-- ── Result Panel ───────────────────────────────────────────────────── -->
+  <section class="result-section hidden" id="resultSection">
+
+    <!-- Verdict -->
+    <div class="verdict-card" id="verdictCard">
+      <div class="verdict-left">
+        <div class="verdict-icon" id="verdictIcon"></div>
+        <div>
+          <div class="verdict-title" id="verdictTitle"></div>
+          <div class="verdict-sub" id="verdictSub"></div>
+        </div>
+      </div>
+      <div class="verdict-prob">
+        <div class="vp-label">Approval Chance</div>
+        <div class="vp-val" id="vpVal">—</div>
+        <div class="vp-bar-track"><div class="vp-bar-fill" id="vpBar"></div></div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="checklist-card" id="checklistCard">
+      <div class="cl-title" id="clTitle">What our model found</div>
+      <ul class="cl-list" id="clList"></ul>
+    </div>
+
+    <!-- Next steps -->
+    <div class="nextsteps-card" id="nextStepsCard">
+      <div class="ns-title" id="nsTitle"></div>
+      <div class="ns-body" id="nsBody"></div>
+    </div>
+
+  </section>
+</main>
+
+<footer>
+  <div>SME LoanCheck · Powered by Logistic Regression ML Model</div>
+  <div class="footer-stack">Flask · Scikit-learn · Python · HTML · CSS · JS</div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
