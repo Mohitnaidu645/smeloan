@@ -1,6 +1,6 @@
 "use strict";
 
-// ── State ────────────────────────────────────────────────────────────────────
+
 let currentCat = "farmer";
 
 const CAT_GROUPS = {
@@ -11,7 +11,7 @@ const CAT_GROUPS = {
   msme:     ["grp-common","grp-msme"],
 };
 
-// ── Next-step advice per category ────────────────────────────────────────────
+
 const NEXT_STEPS = {
   approved: {
     emoji: "🎉",
@@ -87,14 +87,14 @@ const NEXT_STEPS = {
   },
 };
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+
 document.addEventListener("DOMContentLoaded", () => {
   setupCatCards();
   setupForm();
   showGroups("farmer");
 });
 
-// ── Category selection ────────────────────────────────────────────────────────
+
 function setupCatCards() {
   document.querySelectorAll(".cat-card").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -115,13 +115,13 @@ function showGroups(cat) {
   });
 }
 
-// ── Toggle card helper (visual on/off state) ──────────────────────────────────
+
 function toggleCard(id, on) {
   const el = document.getElementById(id);
   if (el) el.classList.toggle("on", on);
 }
 
-// ── CIBIL meter ───────────────────────────────────────────────────────────────
+
 function updateCibilMeter(val) {
   const v = Math.min(Math.max(parseInt(val) || 0, 300), 900);
   const pct = ((v - 300) / 600) * 100;
@@ -134,7 +134,7 @@ function updateCibilMeter(val) {
   else              fill.style.background = "#1B4FD8";
 }
 
-// ── Format large numbers to Indian readable ───────────────────────────────────
+
 function formatInr(n) {
   if (!n || isNaN(n)) return "";
   n = parseInt(n);
@@ -150,7 +150,7 @@ function showFormatted(inputId, hintId) {
   if (hint) hint.textContent = formatInr(val);
 }
 
-// ── Form setup ────────────────────────────────────────────────────────────────
+
 function setupForm() {
   document.getElementById("loanForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -165,7 +165,7 @@ function setupForm() {
       const data = await res.json();
       renderResult(data);
     } catch (err) {
-      alert("Could not connect to Flask server.\n\nMake sure it is running:\n\n  python app.py\n\nThen open: http://127.0.0.1:5000");
+      alert("Could not connect to Flask server.\n\nMake sure it is running:\n\n  python app.py\n\nThen open: http:")
     } finally {
       setLoading(false);
     }
@@ -193,7 +193,7 @@ function collectPayload() {
   return base;
 }
 
-// ── Render result ─────────────────────────────────────────────────────────────
+
 function renderResult(data) {
   const sec      = document.getElementById("resultSection");
   const eligible = data.eligible;
@@ -202,7 +202,7 @@ function renderResult(data) {
 
   sec.classList.remove("hidden");
 
-  // ── Verdict card ──
+  
   const vw = document.getElementById("verdictWrap");
   vw.className = "verdict-wrap " + (eligible ? "approved" : "rejected");
   document.getElementById("verdictIconBig").textContent  = eligible ? "✅" : "❌";
@@ -211,7 +211,7 @@ function renderResult(data) {
     ? "Your profile meets the key criteria. See the steps below to apply for your loan."
     : "Your profile has a few gaps. The checklist below shows exactly what to fix.";
 
-  // ── Score ring ──
+  
   document.getElementById("scorePct").textContent = prob + "%";
   const circumference = 326.7;
   const offset = circumference - (prob / 100) * circumference;
@@ -219,7 +219,7 @@ function renderResult(data) {
     document.getElementById("ringFill").style.strokeDashoffset = offset;
   }, 100);
 
-  // ── Checklist ──
+  
   const list  = document.getElementById("checkList");
   const title = document.getElementById("checkCardTitle");
   list.innerHTML = "";
@@ -245,7 +245,7 @@ function renderResult(data) {
     list.appendChild(li);
   });
 
-  // ── Next steps ──
+  
   const ns    = eligible ? NEXT_STEPS.approved : NEXT_STEPS.rejected;
   const steps = ns.steps[cat] || ns.steps["msme"];
 
@@ -262,19 +262,19 @@ function renderResult(data) {
   sec.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// ── Reset ─────────────────────────────────────────────────────────────────────
+
 function resetForm() {
   document.getElementById("resultSection").classList.add("hidden");
   document.getElementById("loanForm").reset();
 
-  // reset visual helpers
+  
   const fill = document.getElementById("cibilFill");
   if (fill) fill.style.width = "0%";
   ["incomeFormatted","loanFormatted","turnoverFormatted","msme_turnoverFormatted"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = "";
   });
-  // reset toggle cards
+  
   document.querySelectorAll(".toggle-card").forEach(tc => tc.classList.remove("on"));
 
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -284,7 +284,7 @@ function hideResult() {
   document.getElementById("resultSection").classList.add("hidden");
 }
 
-// ── Loading state ─────────────────────────────────────────────────────────────
+
 function setLoading(on) {
   const btn  = document.getElementById("submitBtn");
   const text = btn.querySelector(".sb-text");
