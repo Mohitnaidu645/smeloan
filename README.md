@@ -1,108 +1,58 @@
-# SME Loan Eligibility — ML Predictor
+# SME Loan Eligibility Checker
 
-A mini ML project using Flask (Python backend) and HTML/CSS/JS (frontend) to predict SME loan eligibility across 5 borrower types using 4 machine learning models.
+A Flask application that estimates SME loan eligibility for five applicant categories. It combines a Gradient Boosting classifier with rule-based reasons and suggested next steps. The result is an informational estimate, not a lender approval.
 
-## Tech Stack
+## Features
 
-| Layer     | Technology                                      |
-|-----------|-------------------------------------------------|
-| Frontend  | HTML5, CSS3, Vanilla JavaScript                 |
-| Backend   | Python Flask                                    |
-| ML Models | Scikit-learn (Random Forest, Decision Tree, Logistic Regression, Gradient Boosting) |
-| Data      | Synthetically generated dataset (2000 samples)  |
+- Eligibility verdict, estimated approval probability, FOIR, assessment reasons, and suggested next steps.
+- PDF report download. Before export, enter the report owner, date, and optional personal notes.
+- English and Hindi interface options.
+- Light and dark themes, remembered in the browser.
+- JSON validation and readable errors for invalid prediction and report requests.
 
-## ML Models Used
+## Requirements
 
-1. **Random Forest** — Ensemble of decision trees, best overall accuracy
-2. **Decision Tree** — Simple interpretable tree-based classifier
-3. **Logistic Regression** — Linear classifier with probability output
-4. **Gradient Boosting** — Sequential boosting for high accuracy
-
-## Borrower Categories
-
-- 🌾 **Farmer / Agri** — KCC, NABARD-style loans
-- 🚀 **Startup** — MUDRA, DPIIT/Startup India
-- 🏢 **Existing Business** — PSB, working capital loans
-- 👩 **Women Entrepreneur** — Stree Shakti, Annapurna
-- 🏭 **Micro / MSME** — Udyam-registered, PMEGP
-
-## Features Used in Model
-
-| Feature       | Type    | Description                        |
-|---------------|---------|------------------------------------|
-| age           | int     | Applicant age                      |
-| cibil         | int     | Credit score (300–900)             |
-| income        | int     | Annual income in ₹                 |
-| loan_amount   | int     | Requested loan in ₹                |
-| business_age  | int     | Years in business                  |
-| land_owned    | 0/1     | Owns agricultural land             |
-| gst_filed     | 0/1     | GST returns filed                  |
-| udyam_reg     | 0/1     | Udyam registration done            |
-| dpiit_reg     | 0/1     | DPIIT / Startup India registered   |
-| shg_member    | 0/1     | SHG membership                     |
-| women_owned   | 0/1     | Women own ≥51%                     |
-| turnover      | int     | Annual turnover in ₹               |
-| itr_filed     | 0/1     | ITR filed                          |
-| existing_loan | 0/1     | Active loan exists                 |
-| category      | int     | Borrower type (0–4)                |
-
-## How to Run
+The dependency versions in `requirements.txt` have been installed and tested with Python 3.14.2. Create and activate a virtual environment before installing them.
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-
-# 2. Start the Flask server
+python -m venv .venv
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
+python -m pip install -r requirements.txt
 python app.py
-
-# 3. Open browser
-# http://localhost:5000
 ```
 
-## API Endpoint
+Open <http://localhost:5000>.
 
-**POST /predict**
-```json
-{
-  "category": "farmer",
-  "model": "Random Forest",
-  "age": 35,
-  "cibil": 720,
-  "income": 600000,
-  "loan_amount": 300000,
-  "land_owned": 1
-}
-```
+## Project Layout
 
-**Response:**
-```json
-{
-  "eligible": true,
-  "confidence": 91.4,
-  "model": "Random Forest",
-  "accuracy": 93.5,
-  "reasons": ["All primary eligibility criteria met.", "CIBIL score 720 is satisfactory."],
-  "all_accuracies": {
-    "Random Forest": 93.5,
-    "Decision Tree": 89.2,
-    "Logistic Regression": 85.1,
-    "Gradient Boosting": 92.8
-  }
-}
-```
-
-## Project Structure
-
-```
-sme_loan_project/
-├── app.py                  # Flask app + ML model training
-├── requirements.txt
+```text
+smeloan-main/
+├── app.py                  # Flask routes, synthetic data, model and PDF generation
+├── requirements.txt        # Runtime dependencies
 ├── README.md
 ├── templates/
-│   └── index.html          # Main UI page
+│   └── index.html          # Eligibility form, result and report dialog
 └── static/
     ├── css/
-    │   └── style.css       # Styling
+    │   └── style.css       # Responsive layout and theme variables
     └── js/
-        └── main.js         # Frontend logic
+        └── main.js         # Form, result rendering, preferences and PDF download
 ```
+
+## Endpoints
+
+### `POST /predict`
+
+Accepts JSON with `category` (`farmer`, `startup`, `existing`, `women`, or `msme`), `age`, `cibil`, `income`, and `loan_amount`. Category-specific details such as `land_owned`, `dpiit_reg`, `business_age`, `turnover`, `gst_filed`, `udyam_reg`, `women_owned`, and `existing_loan` are optional integer values or flags.
+
+Returns a JSON eligibility result with the model, probability, reasons, and metrics. Invalid input returns a JSON error with HTTP 400.
+
+### `POST /report`
+
+Accepts the report owner's `name`, ISO-format `date`, optional `notes`, the `application` details, and the `result` returned by `/predict`. Returns an `application/pdf` attachment. Invalid report data returns a JSON error.
+
+## Important
+
+The model is trained at application startup on synthetic data. Its output is for demonstration and screening only; real eligibility, terms, and approval are determined by the lender. Do not treat the estimated probability as a guarantee.

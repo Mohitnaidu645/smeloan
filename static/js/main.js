@@ -2,6 +2,8 @@
 
 
 let currentCat = "farmer";
+let lastApplication = null;
+let lastResult = null;
 
 const CAT_GROUPS = {
   farmer:   ["grp-common","grp-farmer"],
@@ -92,6 +94,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupCatCards();
   setupForm();
   showGroups("farmer");
+  setupPreferences();
+  setupReportDialog();
 });
 
 
@@ -161,11 +165,13 @@ function setupForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(collectPayload()),
       });
-      if (!res.ok) throw new Error("Server error");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not check eligibility. Please review your details.");
+      lastApplication = collectPayload();
+      lastResult = data;
       renderResult(data);
     } catch (err) {
-      alert("Could not connect to Flask server.\n\nMake sure it is running:\n\n  python app.py\n\nThen open: http:")
+      alert(err.message || "Could not connect to the server. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -259,7 +265,126 @@ function renderResult(data) {
     sl.appendChild(li);
   });
 
+  if (localStorage.getItem("sme-language") === "hi") applyLanguage("hi");
   sec.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setupPreferences() {
+  const language = document.getElementById("languageSelect");
+  const themeButton = document.getElementById("themeToggle");
+  const savedLanguage = localStorage.getItem("sme-language") || "en";
+  const savedTheme = localStorage.getItem("sme-theme") || "light";
+  language.value = savedLanguage;
+  document.body.dataset.theme = savedTheme;
+  themeButton.textContent = savedTheme === "dark" ? "☀" : "☾";
+  themeButton.setAttribute("aria-label", savedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+  language.addEventListener("change", () => {
+    localStorage.setItem("sme-language", language.value);
+    document.documentElement.lang = language.value;
+    applyLanguage(language.value);
+  });
+  themeButton.addEventListener("click", () => {
+    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+    document.body.dataset.theme = nextTheme;
+    localStorage.setItem("sme-theme", nextTheme);
+    themeButton.textContent = nextTheme === "dark" ? "☀" : "☾";
+    themeButton.setAttribute("aria-label", nextTheme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+  });
+  applyLanguage(savedLanguage);
+}
+
+function applyLanguage(language) {
+  const hindi = language === "hi";
+  const replacements = hindi ? {
+    "Language": "भाषा", "SME LoanCheck": "एसएमई लोनचेक", "Know Your Loan": "अपने ऋण की", "Eligibility in Seconds": "पात्रता तुरंत जानें",
+    "Choose who you are": "अपनी श्रेणी चुनें", "Fill your details": "अपनी जानकारी भरें", "Get instant result": "तुरंत परिणाम पाएं",
+    "Who are you applying as?": "आप किस श्रेणी में आवेदन कर रहे हैं?", "Fill in your details": "अपनी जानकारी भरें",
+    "Basic Information": "मूल जानकारी", "Your Age": "आपकी आयु", "CIBIL / Credit Score": "CIBIL / क्रेडिट स्कोर", "Annual Income": "वार्षिक आय", "Loan Amount Needed": "आवश्यक ऋण राशि",
+    "Farm Details": "कृषि विवरण", "Do you own agricultural land?": "क्या आपके पास कृषि भूमि है?", "Startup Details": "स्टार्टअप विवरण", "Registered under Startup India / DPIIT?": "क्या Startup India / DPIIT में पंजीकृत हैं?", "Do you already have an active loan?": "क्या आपका पहले से कोई सक्रिय ऋण है?",
+    "Business Details": "व्यवसाय विवरण", "Business Age (years)": "व्यवसाय की अवधि (वर्ष)", "Annual Business Turnover": "वार्षिक कारोबार", "Do you file GST returns regularly?": "क्या आप नियमित GST रिटर्न दाखिल करते हैं?", "Do you file Income Tax Returns (ITR)?": "क्या आप आयकर रिटर्न (ITR) दाखिल करते हैं?",
+    "Ownership Details": "स्वामित्व विवरण", "Is your business 51% or more women-owned?": "क्या आपके व्यवसाय में 51% या अधिक महिला स्वामित्व है?", "Are you a member of a Self Help Group (SHG)?": "क्या आप स्वयं सहायता समूह (SHG) के सदस्य हैं?", "Do you have Udyam Registration?": "क्या आपके पास उद्यम पंजीकरण है?",
+    "Check My Eligibility": "मेरी पात्रता जांचें", "You Are Eligible!": "आप पात्र हैं!", "Not Eligible Right Now": "अभी पात्र नहीं हैं", "Approval Chance": "स्वीकृति की संभावना", "Download PDF report": "PDF रिपोर्ट डाउनलोड करें", "Check Another Application": "दूसरा आवेदन जांचें", "ML Model: Gradient Boosting": "ML मॉडल: ग्रेडिएंट बूस्टिंग",
+    "Farmer / Agri": "किसान / कृषि", "Startup": "स्टार्टअप", "Existing Business": "मौजूदा व्यवसाय", "Women Entrepreneur": "महिला उद्यमी", "Micro / MSME": "सूक्ष्म / MSME",
+    "Save your eligibility report": "पात्रता रिपोर्ट सहेजें", "Your name": "आपका नाम", "Report date": "रिपोर्ट की तारीख", "Personal notes": "व्यक्तिगत नोट्स", "Cancel": "रद्द करें", "Download PDF": "PDF डाउनलोड करें", "Eligible": "पात्र", "Not eligible right now": "अभी पात्र नहीं", "Approval probability": "स्वीकृति की संभावना", "Issues found — fix these to get approved": "समस्याएं मिलीं, स्वीकृति के लिए इन्हें सुधारें", "✔  What looks good in your application": "✔  आपके आवेदन की खूबियां"
+  } : {};
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let textNode;
+  while ((textNode = walker.nextNode())) {
+    const original = textNode.__originalText || textNode.nodeValue;
+    textNode.__originalText = original;
+    const key = original.trim();
+    if (!key) continue;
+    const translated = replacements[key] || key;
+    textNode.nodeValue = original.replace(key, translated);
+  }
+  if (hindi) {
+    document.getElementById("verdictSub").textContent = lastResult
+      ? (lastResult.eligible ? "आपकी जानकारी मुख्य मानदंडों को पूरा करती है। आवेदन के चरण नीचे देखें।" : "आपकी जानकारी में कुछ कमियां हैं। उन्हें सुधारने के लिए नीचे दी गई सूची देखें।")
+      : document.getElementById("verdictSub").textContent;
+    document.getElementById("checkCardTitle").textContent = lastResult
+      ? (lastResult.eligible ? "✔  आपके आवेदन की खूबियां" : "⚠  सुधारने योग्य बातें")
+      : document.getElementById("checkCardTitle").textContent;
+    document.getElementById("verdictTitle").textContent = lastResult
+      ? (lastResult.eligible ? "आप पात्र हैं!" : "अभी पात्र नहीं हैं")
+      : document.getElementById("verdictTitle").textContent;
+    document.querySelector(".score-lbl").innerHTML = "स्वीकृति की<br/>संभावना";
+  } else if (lastResult) {
+    renderResult(lastResult);
+  }
+}
+
+function setupReportDialog() {
+  const dialog = document.getElementById("reportDialog");
+  const form = document.getElementById("reportForm");
+  const error = document.getElementById("reportError");
+  document.getElementById("openReportDialog").addEventListener("click", () => {
+    document.getElementById("reportDate").value = new Date().toISOString().slice(0, 10);
+    error.classList.add("hidden");
+    dialog.showModal();
+  });
+  ["closeReportDialog", "cancelReportDialog"].forEach(id => {
+    document.getElementById(id).addEventListener("click", () => dialog.close());
+  });
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!lastResult || !lastApplication) return;
+    const button = document.getElementById("downloadReportBtn");
+    const reportName = document.getElementById("reportName").value.trim();
+    const reportDate = document.getElementById("reportDate").value;
+    button.disabled = true;
+    error.classList.add("hidden");
+    try {
+      const response = await fetch("/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: reportName,
+          date: reportDate,
+          notes: document.getElementById("reportNotes").value.trim(),
+          application: lastApplication,
+          result: lastResult,
+        }),
+      });
+      if (!response.ok) {
+        const failure = await response.json();
+        throw new Error(failure.error || "The report could not be created.");
+      }
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      const safeName = reportName.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9-]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "applicant";
+      link.download = `sme-loan-report-${safeName}-${reportDate}.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      dialog.close();
+    } catch (failure) {
+      error.textContent = failure.message || "The report could not be downloaded. Please try again.";
+      error.classList.remove("hidden");
+    } finally {
+      button.disabled = false;
+    }
+  });
 }
 
 

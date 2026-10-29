@@ -16,8 +16,17 @@
     <div class="logo-mark">₹</div>
     <div class="logo-text">SME <span>LoanCheck</span></div>
   </div>
-  <div class="header-pill">
-    <span class="pill-dot"></span> ML Model: Logistic Regression
+  <div class="header-actions">
+    <label class="preference-control" for="languageSelect">Language
+      <select id="languageSelect" aria-label="Language">
+        <option value="en">English</option>
+        <option value="hi">हिन्दी</option>
+      </select>
+    </label>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Switch theme">☾</button>
+    <div class="header-pill">
+      <span class="pill-dot"></span> ML Model: Gradient Boosting
+    </div>
   </div>
 </header>
 
@@ -26,7 +35,7 @@
   <div class="hero-inner">
     <div class="hero-badge">🇮🇳 India SME Loan Eligibility · AI Powered</div>
     <h1>Know Your Loan<br/><span class="grad-text">Eligibility in Seconds</span></h1>
-    <p class="hero-desc">Answer a few simple questions. Our Logistic Regression model will instantly tell you if you qualify — and exactly what to improve if you don't.</p>
+    <p class="hero-desc">Answer a few simple questions. Our Gradient Boosting model will instantly estimate your eligibility — and what you can improve if you don't qualify.</p>
     <div class="hero-steps">
       <div class="hstep"><div class="hstep-n">1</div><div class="hstep-t">Choose who you are</div></div>
       <div class="hstep-line"></div>
@@ -353,16 +362,45 @@
     </div>
 
     
-    <button class="retry-btn" onclick="resetForm()">← Check Another Application</button>
+    <div class="result-actions">
+      <button class="download-btn" id="openReportDialog" type="button">↓ Download PDF report</button>
+      <button class="retry-btn" onclick="resetForm()">← Check Another Application</button>
+    </div>
 
   </div>
 
 </main>
 
+<dialog class="report-dialog" id="reportDialog" aria-labelledby="reportDialogTitle">
+  <form id="reportForm" class="report-form">
+    <div class="dialog-heading">
+      <div>
+        <p class="dialog-kicker">PDF EXPORT</p>
+        <h2 id="reportDialogTitle">Save your eligibility report</h2>
+      </div>
+      <button class="dialog-close" id="closeReportDialog" type="button" aria-label="Close">×</button>
+    </div>
+    <label class="report-field">Your name <span class="req">*</span>
+      <input id="reportName" name="name" maxlength="100" autocomplete="name" required/>
+    </label>
+    <label class="report-field">Report date <span class="req">*</span>
+      <input id="reportDate" name="date" type="date" required/>
+    </label>
+    <label class="report-field">Personal notes
+      <textarea id="reportNotes" name="notes" rows="3" maxlength="1000" placeholder="Optional details to help identify this report later"></textarea>
+    </label>
+    <p class="dialog-error hidden" id="reportError" role="alert"></p>
+    <div class="dialog-actions">
+      <button class="dialog-cancel" id="cancelReportDialog" type="button">Cancel</button>
+      <button class="download-btn" id="downloadReportBtn" type="submit">Download PDF</button>
+    </div>
+  </form>
+</dialog>
+
 <footer>
   <div class="footer-left">
     <div class="footer-logo">SME LoanCheck</div>
-    <div class="footer-note">Powered by Logistic Regression · For educational purposes only</div>
+    <div class="footer-note">Powered by Gradient Boosting · For educational purposes only</div>
   </div>
   <div class="footer-right">Flask · Scikit-learn · Python · HTML · CSS · JS</div>
 </footer>

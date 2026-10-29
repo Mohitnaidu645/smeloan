@@ -1,4 +1,4 @@
-from flask import Flask ,request ,jsonify ,render_template 
+from flask import Flask ,request ,jsonify ,render_template ,make_response
 import numpy as np 
 import pandas as pd 
 from sklearn .ensemble import GradientBoostingClassifier 
@@ -6,6 +6,14 @@ from sklearn .preprocessing import StandardScaler
 from sklearn .model_selection import train_test_split 
 from sklearn .metrics import accuracy_score ,classification_report ,confusion_matrix 
 import random 
+from io import BytesIO
+from datetime import date
+from xml.sax.saxutils import escape
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 app =Flask (__name__ )
 
@@ -396,35 +404,121 @@ def index ():
 
 @app .route ("/predict",methods =["POST"])
 def predict ():
-    data =request .json 
-    feats ,foir =build_features (data )
-    feats_s =SCALER .transform (feats )
+    data =request .get_json (silent=True)
+    if not isinstance (data ,dict ):
+        return jsonify ({"error":"Send application details as a JSON object."}),400
 
-    pred =MODEL .predict (feats_s )[0 ]
-    proba =MODEL .predict_proba (feats_s )[0 ]
+    category =data .get ("category","msme")
+    if not isinstance (category ,str )or category not in CAT_MAP:
+        return jsonify ({"error":"Choose a valid applicant category."}),400
 
-    eligible =bool (pred )
-    confidence =round (float (max (proba ))*100 ,1 )
-    prob_eligible =round (float (proba [1 ])*100 ,1 )
-    foir_pct =round (foir *100 ,1 )
+    limits ={"age":(18,70 ),"cibil":(300,900 ),"income":(1,1000000000 ),
+    "loan_amount":(1,1000000000 ),"business_age":(0,100 ),"turnover":(0,10000000000 )}
+    for field ,(minimum ,maximum )in limits.items ():
+        if field not in data and field in {"age","cibil","income","loan_amount"}:
+            return jsonify ({"error":f"{field.replace('_',' ').title()} is required."}),400
+        if field in data:
+            try:
+                value =int (data [field ])
+            except (TypeError ,ValueError ,OverflowError ):
+                return jsonify ({"error":f"{field.replace('_',' ').title()} must be a whole number."}),400
+            if value <minimum or value >maximum:
+                return jsonify ({"error":f"{field.replace('_',' ').title()} must be between {minimum:,} and {maximum:,}."}),400
 
-    reasons ,issues =build_reasons (data ,eligible ,prob_eligible ,foir )
+    try:
+        feats ,foir =build_features (data )
+        feats_s =SCALER .transform (feats )
 
-    return jsonify ({
-    "eligible":eligible ,
-    "confidence":confidence ,
-    "prob_eligible":prob_eligible ,
-    "foir":foir_pct ,
-    "model":"Gradient Boosting (GBM)",
-    "metrics":METRICS ,
-    "reasons":reasons ,
-    "issues_count":len (issues ),
-    "category":data .get ("category","msme"),
-    "note":(
-    "MUDRA loans have NO official minimum CIBIL score requirement. "
-    "Decisions are based on repayment capacity, business viability, and FOIR."
-    )
-    })
+        pred =MODEL .predict (feats_s )[0 ]
+        proba =MODEL .predict_proba (feats_s )[0 ]
+
+        eligible =bool (pred )
+        confidence =round (float (max (proba ))*100 ,1 )
+        prob_eligible =round (float (proba [1 ])*100 ,1 )
+        foir_pct =round (foir *100 ,1 )
+
+        reasons ,issues =build_reasons (data ,eligible ,prob_eligible ,foir )
+
+        return jsonify ({
+        "eligible":eligible ,"confidence":confidence ,"prob_eligible":prob_eligible ,
+        "foir":foir_pct ,"model":"Gradient Boosting (GBM)","metrics":METRICS ,
+        "reasons":reasons ,"issues_count":len (issues ),
+        "category":data .get ("category","msme"),
+        "note":("MUDRA loans have NO official minimum CIBIL score requirement. "
+        "Decisions are based on repayment capacity, business viability, and FOIR.")
+        })
+    except (TypeError ,ValueError ,KeyError ):
+        app .logger .exception ("Invalid loan prediction request")
+        return jsonify ({"error":"Some application details could not be processed. Check the values and try again."}),400
+
+@app .route ("/report",methods =["POST"])
+def download_report ():
+    data =request .get_json (silent=True)
+    if not isinstance (data ,dict )or not isinstance (data .get ("result"),dict ):
+        return jsonify ({"error":"A completed eligibility result is required to create a report."}),400
+
+    name =str (data .get ("name","" )).strip ()
+    report_date =str (data .get ("date","" )).strip ()
+    notes =str (data .get ("notes","" )).strip ()
+    if not name or len (name )>100:
+        return jsonify ({"error":"Enter a name of 1 to 100 characters."}),400
+    try:
+        date .fromisoformat (report_date )
+    except ValueError:
+        return jsonify ({"error":"Enter a valid report date."}),400
+    if len (notes )>1000:
+        return jsonify ({"error":"Notes must be 1,000 characters or fewer."}),400
+
+    result =data ["result"]
+    application =data .get ("application",{})
+    if not isinstance (application ,dict ):
+        return jsonify ({"error":"Application details must be an object."}),400
+    if not isinstance (result .get ("eligible"),bool )or not isinstance (result .get ("reasons",[]),list ):
+        return jsonify ({"error":"The eligibility result is incomplete or invalid."}),400
+    buffer =BytesIO ()
+    doc =SimpleDocTemplate (buffer ,pagesize=A4 ,rightMargin=20*mm ,leftMargin=20*mm ,
+    topMargin=18*mm ,bottomMargin=18*mm ,title="SME Loan Eligibility Report")
+    styles =getSampleStyleSheet ()
+    styles .add (ParagraphStyle (name="ReportTitle",parent=styles ["Title"],textColor=colors.HexColor("#174c43"),spaceAfter=8 ))
+    styles .add (ParagraphStyle (name="ReportBody",parent=styles ["BodyText"],leading=16,spaceAfter=5 ))
+    story =[Paragraph ("SME Loan Eligibility Report",styles ["ReportTitle"]),
+    Paragraph (f"Prepared for: {escape(name)}",styles ["ReportBody"]),
+    Paragraph (f"Report date: {escape(report_date)}",styles ["ReportBody"]),Spacer (1,8 )]
+    status ="Eligible"if result .get ("eligible")else"Not eligible right now"
+    details =[["Decision",status ],["Approval probability",f"{result.get('prob_eligible', 0)}%"],
+    ["Applicant category",str (result .get ("category","Not provided" )).replace ("_"," ").title ()],
+    ["Model",str (result .get ("model","Not provided" ))],
+    ["FOIR",f"{result.get('foir', 0)}%"]]
+    for label ,field in (("Age","age"),("Credit score","cibil"),("Annual income","income"),
+    ("Requested loan","loan_amount"),("Business age","business_age"),("Annual turnover","turnover")):
+        if field in application:
+            details .append ([label,str (application [field ])])
+    table =Table (details ,colWidths =[48*mm ,112*mm ],hAlign="LEFT")
+    table .setStyle (TableStyle ([
+    ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#f2f7f5")),
+    ("TEXTCOLOR",(0,0),(0,-1),colors.HexColor("#334155")),
+    ("FONTNAME",(0,0),(0,-1),"Helvetica-Bold"),
+    ("GRID",(0,0),(-1,-1),0.4,colors.HexColor("#d8e2df")),
+    ("VALIGN",(0,0),(-1,-1),"TOP"),("TOPPADDING",(0,0),(-1,-1),7),
+    ("BOTTOMPADDING",(0,0),(-1,-1),7)]))
+    story .extend ([table ,Spacer (1,14 ),Paragraph ("Assessment",styles ["Heading2"])])
+    for reason in result .get ("reasons",[])[:100]:
+        story .append (Paragraph (escape(str (reason )),styles ["ReportBody"]))
+    notes_text =escape(notes ).replace ("\n","<br/>")
+    if notes_text:
+        story .extend ([Spacer (1,8 ),Paragraph ("Personal notes",styles ["Heading2"]),
+        Paragraph (notes_text,styles ["ReportBody"])])
+    story .extend ([Spacer (1,12 ),Paragraph ("This estimate is informational and is not a loan approval or offer. Final decisions are made by the lender.",styles ["Italic"])])
+    try:
+        doc .build (story )
+    except Exception:
+        app .logger .exception ("Could not generate eligibility report")
+        return jsonify ({"error":"The PDF could not be created. Please try again."}),500
+
+    response =make_response (buffer .getvalue ())
+    response .headers ["Content-Type"]="application/pdf"
+    response .headers ["Content-Disposition"]="attachment; filename=sme-eligibility-report.pdf"
+    return response
 
 @app .route ("/model_info",methods =["GET"])
 def model_info ():
